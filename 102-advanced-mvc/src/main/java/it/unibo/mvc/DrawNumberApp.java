@@ -1,18 +1,39 @@
 package it.unibo.mvc;
 
+import java.io.BufferedReader;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 /**
  */
 public final class DrawNumberApp implements DrawNumberViewObserver {
-    private static final int MIN = 0;
-    private static final int MAX = 100;
-    private static final int ATTEMPTS = 10;
+    private int min;
+    private int max;
+    private int attempts;
+    private static final String CONFIG_FILE = "src/main/resources/config.yml";
 
     private final DrawNumber model;
     private final List<DrawNumberView> views;
+
+    private void getConfig(final String filePath) throws IOException{
+        try (
+            final BufferedReader br = new BufferedReader(new FileReader(filePath));
+        ) {
+            String line = null;
+            final ArrayList<String> configs = new ArrayList<>();
+            while ((line = br.readLine()) != null) {
+                String last = line.substring(line.lastIndexOf(' ') + 1);    
+                configs.add(last);       
+            }
+            min = Integer.parseInt(configs.get(0));
+            max = Integer.parseInt(configs.get(1));
+            attempts = Integer.parseInt(configs.get(2));
+        }
+    }
 
     /**
      * @param views
@@ -27,7 +48,12 @@ public final class DrawNumberApp implements DrawNumberViewObserver {
             view.setObserver(this);
             view.start();
         }
-        this.model = new DrawNumberImpl(MIN, MAX, ATTEMPTS);
+        try {
+            this.getConfig(CONFIG_FILE);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        this.model = new DrawNumberImpl(min, max, attempts);
     }
 
     @Override
@@ -66,7 +92,7 @@ public final class DrawNumberApp implements DrawNumberViewObserver {
      * @throws FileNotFoundException 
      */
     public static void main(final String... args) throws FileNotFoundException {
-        new DrawNumberApp(new DrawNumberViewImpl());
+        new DrawNumberApp(new DrawNumberViewImpl(), new DrawNumberViewImpl(), new PrintStreamView(System.out), new PrintStreamView("output.log"));
     }
 
 }
